@@ -10,14 +10,7 @@ More information about TensorFlow can be found at the following links:
 - **Official Documentation:** [https://www.tensorflow.org/api_docs](https://www.tensorflow.org/api_docs)
 - **Developer Guide:** [https://www.tensorflow.org/guide](https://www.tensorflow.org/guide)
 
-## Development View
-
-## Applied Perspective
-
-## Styles and Patterns Used
-
 ## Architectural Assessment
-
 
 ## Development View
 
@@ -138,6 +131,36 @@ TensorFlow uses a build and test system called Bazel, which was also developed b
 Before building TensorFlow from source, a developer has to run a configuration script called `configure.py`. This script asks about your hardware setup and generates a configuration file that tells Bazel what to include in the build. For example, if the user has an NVIDIA GPU, the script enables CUDA support; otherwise, it won't. This means the TensorFlow binary you end up with is tailored to your specific machine rather than being a generic build.
 
 Python dependencies are managed through a set of version-locked requirements files, one per supported Python version (for example, `requirements_lock_3_11.txt` for Python 3.11). These files pin every dependency to an exact version, which ensures that two developers building TensorFlow on different machines end up with the same set of packages.
+
+### Applied Perspective
+
+### 1. Perspectives
+
+For this system, we'll be analyzing it from a Performance and Scalability perspective, as TensorFlow is a large scale software, often used for purposes such as data analysis. Overall, we want to know how well the system meets its timing and throughput requirements (performance), and how the system will perform as more users begin to rely on it (scalability).
+
+### 2. Relevant Concerns
+
+#### Concern 1: Throughput
+
+Throughput can be defined as the amount of work the system can complete per unit of time under a stated workload. For TensorFlow specifically, throughput can be measured in a variety of ways due to the system's various use cases. The most common one would be samples per second, which counts how many training examples the system processes per second. For computer vision, this metric would be in images per second, and for language models tokens per second. There are many features that optimize throughput for TensorFlow, essentially allowing users to control the amount of time and resources they spend on training a model.
+
+#### Specific features:
+
+- **The dataflow graph + Grappler optimizer** (`tensorflow/core/grappler`): When you use `@tf.function`, TensorFlow will turn your Python function into a resuable computation graph, essentially allowing the user to run the same graph with new input values every time. TensorFlow also uses an optimzation engine called Grappler, which rewrites your graph so that certain tasks within your function can be run in parallel and plan memory ahead of time. This increases throughput by allowing for faster processing.
+
+- **The input pipeline `tf.data`** (`tensorflow/core/data`): `tf.data` essentially optimizes GPU/CPU use for data processing. Instead of first preparing input and then training a model on that input, `tf.data` ensures that they run in parallel, allowing for input to get prepared and processed while training is occurring. TensorFlow spreads the data preparation work across different CPU threads, allowing for faster input processing, as the GPU doesn't have to idle while the CPU is normalizing the input.
+
+- **Asynchronous, parallel kernel execution** (`tensorflow/core/common_runtime`): TensorFlow runtime essentially walks the computation graph and figures out which nodes have available inputs. The executor then uses thread pools to launch the operations on these nodes, further optimizing performance and throughput.
+
+#### Concern 2: Scalability
+
+Overall, TensorFlow is meant to be extremely scalable, as model code should be executable on any size of CPU, GPU, or TPU. Both vertical and horizontal scaling are used to improve scalability and ensure that the same model's operations can be implemented on different machines.
+
+#### Specific features:
+
+- **Vertical (scaling up)**: TensorFlow enables you to not have to rewrite model code when you move from a CPU to a large GPU because its runtime essentially abstracts hardware. On large machines, TensorFlow uses MirroredStrategy from `tensorflow/python/distribute/` in order to replicate the model on each local GPU and split input batches across them, syncing processing after each step. There are also many runtime optimizations that were already spotlighted in previous sections.
+
+- **Horizontal (scaling out)**: `tf.distribute.Strategy` is the main API for scaling training, and the different functions assign different workers to GPUs/TPUs depending on the size of the machine that is running the model. `tensorflow/dtensor/` allows training to be split amongst multiple devices, allowing for horizontal scaling on different machines.
 
 ### Architectural Styles and Design Patterns
 
