@@ -117,7 +117,8 @@ There are dedicated directories for Java, Go, and JavaScript bindings. These eac
 
 ### How the Components Fit Together
 
-*** INSERT DIAGRAM HERE ***
+![TensorFlow architecture diagram](images/tensorflow.drawio.png)
+
 
 Looking at the diagram above, the overall structure of TensorFlow can be understood as a series of layers where each layer depends on the one below it but has no knowledge of anything above it. At the very top sit the user-facing components: the Python frontend and the language bindings for Java, Go, and JavaScript. These are the entry points into the system. A user writing Python interacts exclusively with the Python frontend, while a developer building an Android app might use the Java bindings instead. Neither of these components knows about the other, and they don't need to.
 
