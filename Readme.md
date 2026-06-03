@@ -14,7 +14,7 @@ More information about TensorFlow can be found at the following links:
 
 TensorFlow’s architecture is generally strong for a system of its size because it separates user-facing APIs from low-level execution, uses stable interfaces between layers, and supports extension through kernels, delegates, and language bindings. However, the same architectural decisions that make TensorFlow powerful also introduce complexity, especially for contributors who need to understand cross-layer behavior.
 
-### 1. Separation of Concerns
+### 1. Separation of Concerns (Single Responsibility Principle)
 
 TensorFlow demonstrates strong separation of concerns across its major components. The Python frontend is responsible for exposing a usable developer interface, while the C API and C++ runtime handle execution, memory management, device placement, and kernel dispatch. TensorFlow Lite is also separated from the main runtime because it focuses on lightweight inference for mobile and embedded environments rather than full training.
 
@@ -32,7 +32,7 @@ This is a major architectural strength because TensorFlow is both a library and 
 
 The tradeoff is that stable interfaces can also slow down architectural change. Once public APIs are widely used, TensorFlow cannot easily remove or redesign them without breaking existing projects. This creates backward-compatibility pressure and can lead to older abstractions staying in the system even after newer ones are introduced.
 
-### 3. Modifiability and Extensibility
+### 3. Modifiability and Extensibility (Open/Closed Principle)
 
 TensorFlow is designed to be highly extensible. New operations can be added through the op and kernel registration system, and TensorFlow Lite supports extension through delegates that allow parts of a model to run on specialized hardware. This plugin-like architecture supports modifiability because the system does not need one giant central dispatch table for every possible operation or device.
 
@@ -55,6 +55,12 @@ TensorFlow’s architecture is strongly shaped by performance and scalability co
 This is one of TensorFlow’s biggest architectural strengths. The layered design allows simple Python code to trigger highly optimized lower-level execution. A model can start as high-level user code, be transformed into a graph, optimized, compiled, and dispatched to the appropriate device-specific kernels.
 
 The downside is architectural complexity. Performance features are spread across several components, including the Python frontend, graph optimizer, compiler infrastructure, runtime, and hardware kernels. This makes TensorFlow powerful, but also harder to understand and debug. In other words, TensorFlow prioritizes performance and scalability even when that increases internal complexity.
+
+### 6. Dependency Inversion Principle
+
+The **Dependency Inversion Principle** states that high-level modules should not depend on low-level implementation details, and both should depend on abstractions. TensorFlow clearly follows this principle between language frontends and the Core Runtime. The Python frontend, Java bindings, and other clients do not call unstable C++ classes directly. Instead, they depend on the stable C API in `tensorflow/c/`, which is the abstraction of the C++ classes. The C++ runtime implements that interface underneath, meaning both the runtime and client depend on the C API abstraction rather than on each other.
+
+This is a major strength for a multi-language, multi-hardware system because it limits ripple effects when internals change. The tradeoff is that internal refactors become slow, because the system still has to be stable enough to support all the appropriate clients.
 
 ### Overall Assessment
 
@@ -181,7 +187,7 @@ Before building TensorFlow from source, a developer has to run a configuration s
 
 Python dependencies are managed through a set of version-locked requirements files, one per supported Python version (for example, `requirements_lock_3_11.txt` for Python 3.11). These files pin every dependency to an exact version, which ensures that two developers building TensorFlow on different machines end up with the same set of packages.
 
-### Applied Perspective
+## Applied Perspective
 
 ### 1. Perspectives
 
@@ -211,6 +217,12 @@ Overall, TensorFlow is meant to be extremely scalable, as model code should be e
 
 - **Horizontal (scaling out)**: `tf.distribute.Strategy` is the main API for scaling training, and the different functions assign different workers to GPUs/TPUs depending on the size of the machine that is running the model. `tensorflow/dtensor/` allows training to be split amongst multiple devices, allowing for horizontal scaling on different machines.
 
+### 3. Activities
+
+#### Conduct Practical Testing
+
+
+
 ### Architectural Styles and Design Patterns
 
 #### Architectural Style
@@ -235,3 +247,6 @@ The Keras training system uses the Observer pattern through its callbacks API. D
 
 **5. Registry — op registration in the Core Runtime**
 The Core Runtime uses a Registry pattern for managing operations. Rather than hardcoding a fixed list of supported ops, TensorFlow maintains a global op registry where each operation registers itself at program startup using a macro called `REGISTER_OP`. Kernels similarly register themselves against specific op names and device types using `REGISTER_KERNEL_BUILDER`. This means new operations and new hardware backends can be added to the system simply by writing a new registration, without modifying any central dispatch table or factory class. The registry acts as a dynamic lookup mechanism that decouples op definitions from their implementations.
+
+**6. Adapter — the C API layer**
+The C API in `tensorflow/c/` acts as an Adapter between the frontend and the C++ Core Runtime. Rather than forcing every language binding to call C++ directly, TensorFlow exposes a stable C interface that translates requests from each client into the operations the core understands.
