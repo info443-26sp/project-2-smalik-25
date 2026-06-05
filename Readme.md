@@ -221,9 +221,11 @@ Overall, TensorFlow is meant to be extremely scalable, as model code should be e
 
 #### Conduct Practical Testing
 
+![Model Test Results](/images/BC7A17AE-6FAA-4F30-B069-949C9275C3B8_4_5005_c.jpeg)
 
+The main test I did for this activity was testing out how `tf.function` optimizes model training, and how that differs on a CPU and a GPU. The results show that `tf.function` is able to make training 1.42 times faster than running model code eagerly on a CPU, and 2.71 times faster on a GPU. I tested this by creating a model that would generate a vector of ten random outputs by adding the random weights of a list of 2048 numbers (multiplied by each number) and then adjusting the weights accordingly so that the model outputs the largest number in the vector in the (randomly generated) correct index with a high level of confidence. For example, if the model outputs are <3, -2, 4, 0, 1, -5, -6, 10, -1, 2>, and the actual index is 7, the model should ideally be predicting that 7 will have the highest value with a high confidence. If not, the weights will have to be readjusted. All of this computation is what we define as a "step", and the table below shows how well the model performed on CPUs vs. GPUs, running the model code eagerly and using `tf.function`.
 
-### Architectural Styles and Design Patterns
+## Architectural Styles and Design Patterns
 
 #### Architectural Style
 
